@@ -80,7 +80,8 @@ public class LocalInputs : NetworkBehaviour
         if (_jumpActionReference != null && _jumpActionReference.action.WasPressedThisFrame())
             return true;
 
-        if (Keyboard.current != null && Keyboard.current.wKey.wasPressedThisFrame)
+        if (Keyboard.current != null &&
+            (Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
             return true;
 
         return false;
@@ -91,7 +92,8 @@ public class LocalInputs : NetworkBehaviour
         if (_jumpActionReference != null && _jumpActionReference.action.IsPressed())
             return true;
 
-        if (Keyboard.current != null && Keyboard.current.wKey.isPressed)
+        if (Keyboard.current != null &&
+            (Keyboard.current.wKey.isPressed || Keyboard.current.spaceKey.isPressed))
             return true;
 
         return false;
@@ -103,9 +105,6 @@ public class LocalInputs : NetworkBehaviour
             return true;
 
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-            return true;
-
-        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
             return true;
 
         return false;
