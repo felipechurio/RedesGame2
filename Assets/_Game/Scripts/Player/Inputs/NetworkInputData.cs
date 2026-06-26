@@ -3,9 +3,9 @@ using UnityEngine;
 
 public struct NetworkInputData : INetworkInput
 {
-    public float xAxi;
+    public float xAxis;
 
-    //public const byte JumpButton = 1;
+    public Vector3 AimWorldPosition;
 
     public NetworkButtons Buttons;
 }
@@ -13,5 +13,6 @@ public struct NetworkInputData : INetworkInput
 public enum ButtonType
 {
     Jump = 0,
-    Fire = 1
+    Fire = 1,
+    JumpHeld = 2
 }

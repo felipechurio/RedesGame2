@@ -6,12 +6,18 @@ public class LocalInputs : NetworkBehaviour
 {
     public static LocalInputs Instance { get; private set; }
 
-    NetworkInputData _inputData;
+    private NetworkInputData _inputData;
 
-    [SerializeField] InputActionReference _moveActionReference;
+    [Header("Input Actions")]
+    [SerializeField] private InputActionReference _moveActionReference;
+    [SerializeField] private InputActionReference _jumpActionReference;
+    [SerializeField] private InputActionReference _fireActionReference;
 
-    bool _isJumpPressed;
-    bool _isFirePressed;
+    [Header("Aim")]
+    [SerializeField] private Camera _camera;
+
+    private bool _isJumpPressed;
+    private bool _isFirePressed;
 
     public override void Spawned()
     {
@@ -19,19 +25,29 @@ public class LocalInputs : NetworkBehaviour
         {
             Instance = this;
             _inputData = new NetworkInputData();
+
+            if (_camera == null)
+            {
+                _camera = Camera.main;
+            }
+
             return;
         }
 
         enabled = false;
     }
 
-    void Update()
+    private void Update()
     {
-        if (Keyboard.current.wKey.wasPressedThisFrame)
+        if (!Object.HasInputAuthority)
+            return;
+
+        if (WasJumpPressed())
         {
             _isJumpPressed = true;
         }
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+
+        if (WasFirePressed())
         {
             _isFirePressed = true;
         }
@@ -39,14 +55,86 @@ public class LocalInputs : NetworkBehaviour
 
     public NetworkInputData GetInputs()
     {
-        _inputData.xAxi = _moveActionReference.action.ReadValue<Vector2>().x;
+        float moveX = 0f;
 
-        _inputData.Buttons.Set(ButtonType.Jump, _isJumpPressed);
+        if (_moveActionReference != null)
+        {
+            moveX = _moveActionReference.action.ReadValue<Vector2>().x;
+        }
+
+        _inputData.xAxis = moveX;
+        _inputData.AimWorldPosition = GetMouseWorldPosition();
+
+        _inputData.Buttons.Set((int)ButtonType.Jump, _isJumpPressed);
+        _inputData.Buttons.Set((int)ButtonType.Fire, _isFirePressed);
+        _inputData.Buttons.Set((int)ButtonType.JumpHeld, IsJumpHeld());
+
         _isJumpPressed = false;
-
-        _inputData.Buttons.Set(ButtonType.Fire, _isFirePressed);
         _isFirePressed = false;
 
         return _inputData;
+    }
+
+    private bool WasJumpPressed()
+    {
+        if (_jumpActionReference != null && _jumpActionReference.action.WasPressedThisFrame())
+            return true;
+
+        if (Keyboard.current != null && Keyboard.current.wKey.wasPressedThisFrame)
+            return true;
+
+        return false;
+    }
+
+    private bool IsJumpHeld()
+    {
+        if (_jumpActionReference != null && _jumpActionReference.action.IsPressed())
+            return true;
+
+        if (Keyboard.current != null && Keyboard.current.wKey.isPressed)
+            return true;
+
+        return false;
+    }
+
+    private bool WasFirePressed()
+    {
+        if (_fireActionReference != null && _fireActionReference.action.WasPressedThisFrame())
+            return true;
+
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            return true;
+
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            return true;
+
+        return false;
+    }
+
+    private Vector3 GetMouseWorldPosition()
+    {
+        if (_camera == null)
+        {
+            _camera = Camera.main;
+        }
+
+        if (_camera == null || Mouse.current == null)
+        {
+            return transform.position + transform.right;
+        }
+
+        Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+        Plane xyPlane = new Plane(
+            Vector3.forward,
+            new Vector3(0f, 0f, transform.position.z)
+        );
+
+        if (xyPlane.Raycast(ray, out float distance))
+        {
+            return ray.GetPoint(distance);
+        }
+
+        return transform.position + transform.right;
     }
 }
